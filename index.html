@@ -1706,13 +1706,34 @@
     setTimeout(() => { el.textContent = orig; }, 1500);
   }
 
-  function joinWaitlist(e) {
+  async function joinWaitlist(e) {
     e.preventDefault();
     const email = document.getElementById('waitlist-email').value;
     const msg = document.getElementById('form-msg');
-    msg.textContent = '> ' + email + ' added to queue. Invite incoming within 7 days.';
-    document.getElementById('waitlist-email').value = '';
-    setTimeout(() => { msg.textContent = ''; }, 8000);
+    const btn = e.target.querySelector('button[type="submit"]');
+    btn.disabled = true;
+    btn.textContent = 'Submitting...';
+    try {
+      const res = await fetch('https://api-production-1873.up.railway.app/waitlist', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        msg.textContent = '> ' + email + ' added to queue. Invite incoming within 7 days.';
+        document.getElementById('waitlist-email').value = '';
+      } else {
+        msg.style.color = 'var(--orange)';
+        msg.textContent = '> Error: ' + (data.error || 'Something went wrong.');
+      }
+    } catch (err) {
+      msg.style.color = 'var(--orange)';
+      msg.textContent = '> Connection error. Try again.';
+    }
+    btn.disabled = false;
+    btn.textContent = 'Request invite →';
+    setTimeout(() => { msg.textContent = ''; msg.style.color = 'var(--success)'; }, 8000);
   }
 
   const demoLines = [
