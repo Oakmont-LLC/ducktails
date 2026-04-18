@@ -8,6 +8,18 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <title>Ducktails — Mesh networking for the AI era</title>
 <meta name="description" content="A zero-config mesh VPN. Connect devices, servers, and AI agents into one private network in 60 seconds. Per-agent identity. Audit logs. The infrastructure Tailscale forgot to build." />
+<!-- OG / Social -->
+<meta property="og:type" content="website" />
+<meta property="og:title" content="Ducktails — Mesh networking for the AI era" />
+<meta property="og:description" content="Zero-config mesh VPN for humans and AI agents. Connect any device into one private network in 60 seconds." />
+<meta property="og:url" content="https://ducktails.vercel.app" />
+<meta property="og:image" content="https://ducktails.vercel.app/og.png" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="Ducktails — Mesh networking for the AI era" />
+<meta name="twitter:description" content="Zero-config mesh VPN for humans and AI agents. Per-agent identity. Audit logs. The infra Tailscale forgot to build." />
+<meta name="twitter:image" content="https://ducktails.vercel.app/og.png" />
+<!-- Favicon -->
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg viewBox='0 0 32 32' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='32' height='32' rx='6' fill='%23ff5a1f'/%3E%3Cpath d='M22 9c-1.8 0-3.2 1.4-3.2 3.2 0 .5.1 1 .4 1.5L8 18c-1.3.6-2.2 1.9-2.2 3.5 0 2.2 1.8 3.8 3.8 3.8h10.8c4.5 0 8.2-3.7 8.2-8.2 0-2.6-1.3-4.9-3.2-6.4C25.4 9.9 23.8 9 22 9z' fill='%230d0d0c'/%3E%3Ccircle cx='22.6' cy='12.2' r='1.1' fill='%23ff5a1f'/%3E%3C/svg%3E" />
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;1,9..144,400&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
@@ -1078,9 +1090,53 @@
   }
   .footer-bottom .duck svg { width: 14px; height: 14px; color: var(--orange); }
 
+  /* MOBILE MENU */
+  .hamburger {
+    display: none;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 6px;
+    color: var(--ink);
+  }
+  .hamburger svg { width: 22px; height: 22px; }
+  .mobile-menu {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(13, 13, 12, 0.97);
+    backdrop-filter: blur(20px);
+    z-index: 200;
+    padding: 80px 32px 32px;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .mobile-menu.open { display: flex; }
+  .mobile-menu a {
+    color: var(--ink);
+    text-decoration: none;
+    font-family: var(--mono);
+    font-size: 18px;
+    font-weight: 500;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .mobile-menu .close-menu {
+    position: absolute;
+    top: 16px;
+    right: 24px;
+    background: none;
+    border: none;
+    color: var(--ink);
+    font-size: 28px;
+    cursor: pointer;
+    font-family: var(--mono);
+  }
+
   /* RESPONSIVE */
   @media (max-width: 960px) {
     .nav-links { display: none; }
+    .hamburger { display: block; }
     .hero-grid { grid-template-columns: 1fr; min-height: auto; }
     .hero-left {
       padding: 20px 0 60px;
@@ -1140,9 +1196,20 @@
     <div class="nav-cta">
       <a href="#login" class="btn btn-ghost">Sign in</a>
       <a href="#waitlist" class="btn btn-primary">Start trial <span class="btn-arrow">→</span></a>
+      <button class="hamburger" onclick="document.getElementById('mobile-menu').classList.add('open')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+      </button>
     </div>
   </div>
 </nav>
+<div id="mobile-menu" class="mobile-menu">
+  <button class="close-menu" onclick="this.parentElement.classList.remove('open')">x</button>
+  <a href="#features" onclick="this.parentElement.classList.remove('open')">Features</a>
+  <a href="#how" onclick="this.parentElement.classList.remove('open')">How it works</a>
+  <a href="#agents" onclick="this.parentElement.classList.remove('open')">For agents</a>
+  <a href="#pricing" onclick="this.parentElement.classList.remove('open')">Pricing</a>
+  <a href="#waitlist" onclick="this.parentElement.classList.remove('open')">Join waitlist</a>
+</div>
 
 <div class="ticker">
   <div class="ticker-track">
@@ -1697,6 +1764,7 @@
   </div>
 </footer>
 
+<script src="https://va.vercel-scripts.com/v1/script.js" defer data-endpoint="/_vercel/insights"></script>
 <script>
   function copyInstall(el) {
     const text = 'curl -fsSL ducktails.ai/install | sh';
