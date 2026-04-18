@@ -1,0 +1,1834 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark" style="background:#0d0d0c; color-scheme: dark;">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="color-scheme" content="dark" />
+<meta name="theme-color" content="#0d0d0c" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<title>Ducktails — Mesh networking for the AI era</title>
+<meta name="description" content="A zero-config mesh VPN. Connect devices, servers, and AI agents into one private network in 60 seconds. Per-agent identity. Audit logs. The infrastructure Tailscale forgot to build." />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;1,9..144,400&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  /* Force dark color scheme — override iOS Safari / Reader Mode / any browser autoswitch */
+  :root {
+    color-scheme: dark only;
+    --bg: #0d0d0c;
+    --bg-warm: #17161414;
+    --bg-warm: #171614;
+    --bg-card: #1c1b18;
+    --ink: #f8f5ed;
+    --ink-soft: #d4cebe;
+    --muted: #8a8679;
+    --line: #2e2c27;
+    --line-soft: #221f1b;
+    --orange: #ff5a1f;
+    --orange-soft: #ff7a47;
+    --orange-dim: #3a1a0a;
+    --cream: #f8f5ed;
+    --success: #5aff8a;
+    --mono: 'JetBrains Mono', 'SF Mono', Menlo, monospace;
+    --serif: 'Fraunces', 'Times New Roman', serif;
+    --sans: 'Inter', -apple-system, sans-serif;
+  }
+  @media (prefers-color-scheme: light) {
+    :root {
+      color-scheme: dark only;
+    }
+  }
+  html, body {
+    background: #0d0d0c !important;
+    color: #f8f5ed !important;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; background: var(--bg); }
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--ink);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+    position: relative;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 1;
+    background-image:
+      linear-gradient(to right, rgba(244, 239, 228, 0.025) 1px, transparent 1px);
+    background-size: calc(100% / 12) 100%;
+    mix-blend-mode: screen;
+  }
+
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 1;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    opacity: 0.06;
+    mix-blend-mode: overlay;
+  }
+
+  .container {
+    max-width: 1320px;
+    margin: 0 auto;
+    padding: 0 32px;
+    position: relative;
+    z-index: 2;
+  }
+
+  /* NAV */
+  nav.topnav {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(17, 17, 16, 0.85);
+    backdrop-filter: blur(16px) saturate(150%);
+    -webkit-backdrop-filter: blur(16px) saturate(150%);
+    border-bottom: 1px solid var(--line);
+  }
+  .nav-inner {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 48px;
+    align-items: center;
+    height: 60px;
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+    color: var(--ink);
+  }
+  .brand-mark {
+    width: 28px;
+    height: 28px;
+    background: var(--orange);
+    border-radius: 4px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--bg);
+  }
+  .brand-mark svg { width: 20px; height: 20px; }
+  .brand-name {
+    font-family: var(--mono);
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+  .brand-name .ai { color: var(--orange); font-weight: 500; }
+  .brand-version {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    border: 1px solid var(--line);
+    padding: 2px 6px;
+    border-radius: 3px;
+    margin-left: 4px;
+  }
+  .nav-links { display: flex; gap: 2px; align-items: center; }
+  .nav-links a {
+    color: var(--ink-soft);
+    text-decoration: none;
+    font-family: var(--mono);
+    font-size: 12.5px;
+    font-weight: 500;
+    padding: 6px 12px;
+    border-radius: 5px;
+    transition: all 0.15s;
+  }
+  .nav-links a:hover { color: var(--ink); background: var(--bg-warm); }
+  .nav-cta { display: flex; gap: 8px; align-items: center; }
+
+  /* BUTTONS */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 18px;
+    font-size: 13.5px;
+    font-weight: 500;
+    font-family: var(--mono);
+    border-radius: 6px;
+    border: 1px solid transparent;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    letter-spacing: -0.01em;
+    position: relative;
+    overflow: hidden;
+  }
+  .btn-ghost { color: var(--ink-soft); }
+  .btn-ghost:hover { color: var(--ink); }
+  .btn-primary {
+    background: var(--orange);
+    color: #0a0a09;
+    font-weight: 600;
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.25),
+      0 1px 2px rgba(0, 0, 0, 0.2);
+  }
+  .btn-primary:hover {
+    background: var(--orange-soft);
+    transform: translateY(-1px);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.3),
+      0 4px 12px rgba(255, 90, 31, 0.35);
+  }
+  .btn-primary:active { transform: translateY(0); }
+  .btn-outline {
+    background: transparent;
+    color: var(--ink);
+    border-color: var(--line);
+  }
+  .btn-outline:hover { border-color: var(--ink-soft); background: var(--bg-warm); }
+  .btn-lg { padding: 14px 24px; font-size: 14.5px; }
+  .btn-arrow { transition: transform 0.15s; }
+  .btn:hover .btn-arrow { transform: translateX(3px); }
+
+  /* TICKER */
+  .ticker {
+    border-bottom: 1px solid var(--line);
+    background: var(--bg-warm);
+    overflow: hidden;
+    position: relative;
+    z-index: 2;
+  }
+  .ticker-track {
+    display: flex;
+    gap: 48px;
+    padding: 8px 0;
+    animation: scroll 40s linear infinite;
+    white-space: nowrap;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.05em;
+  }
+  .ticker-track span { display: inline-flex; align-items: center; gap: 48px; }
+  .ticker-track span::after {
+    content: '◆';
+    color: var(--orange);
+    font-size: 6px;
+  }
+  @keyframes scroll {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
+  }
+
+  /* HERO */
+  .hero {
+    padding: 80px 0 0;
+    position: relative;
+    border-bottom: 1px solid var(--line);
+  }
+  .hero-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+    align-items: stretch;
+    min-height: 600px;
+  }
+  .hero-left {
+    padding: 20px 56px 80px 0;
+    border-right: 1px solid var(--line);
+    position: relative;
+  }
+  .hero-right {
+    padding: 20px 0 80px 56px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  .spec-marks {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+    margin-bottom: 40px;
+    text-transform: uppercase;
+  }
+  .spec-marks .corner {
+    display: inline-block;
+    width: 10px; height: 10px;
+    border: 1px solid var(--orange);
+    border-right: none;
+    border-bottom: none;
+  }
+  .tag-line {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--orange);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    margin-bottom: 24px;
+  }
+  .tag-line::before {
+    content: '';
+    width: 24px; height: 1px;
+    background: var(--orange);
+  }
+  .live-dot {
+    width: 6px; height: 6px;
+    background: var(--success);
+    border-radius: 50%;
+    box-shadow: 0 0 0 3px rgba(90, 255, 138, 0.15);
+    animation: blink 2s infinite;
+  }
+  @keyframes blink { 50% { opacity: 0.4; } }
+
+  h1.hero-title {
+    font-family: var(--mono);
+    font-size: clamp(42px, 5.5vw, 80px);
+    line-height: 0.94;
+    letter-spacing: -0.035em;
+    font-weight: 700;
+    color: #ffffff !important;
+    margin-bottom: 28px;
+    text-shadow: 0 1px 0 rgba(0,0,0,0.1);
+  }
+  h1.hero-title .line { display: block; color: #ffffff; }
+  h1.hero-title .serif {
+    font-family: var(--serif);
+    font-weight: 400;
+    font-style: italic;
+    letter-spacing: -0.02em;
+    color: var(--orange) !important;
+  }
+  h1.hero-title .mark {
+    display: inline-block;
+    position: relative;
+  }
+  h1.hero-title .mark::after {
+    content: '';
+    position: absolute;
+    bottom: 4px;
+    left: -2%;
+    width: 104%;
+    height: 14%;
+    background: var(--orange);
+    z-index: -1;
+    opacity: 0.25;
+    transform: skew(-2deg);
+  }
+
+  .hero-lede {
+    font-size: 17.5px;
+    line-height: 1.55;
+    color: #d4cebe !important;
+    max-width: 520px;
+    margin-bottom: 36px;
+  }
+  .hero-lede strong { color: #ffffff !important; font-weight: 600; }
+
+  .hero-actions {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-bottom: 36px;
+  }
+
+  .install-block {
+    display: flex;
+    align-items: center;
+    font-family: var(--mono);
+    font-size: 12.5px;
+    background: var(--bg);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    overflow: hidden;
+    max-width: 100%;
+  }
+  .install-block .label {
+    color: var(--muted);
+    padding: 9px 12px;
+    border-right: 1px solid var(--line);
+    background: var(--bg-warm);
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .install-block .cmd {
+    color: var(--ink);
+    padding: 9px 14px;
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+  .install-block .copy-btn {
+    padding: 9px 12px;
+    border: none;
+    background: var(--bg-warm);
+    color: var(--muted);
+    cursor: pointer;
+    border-left: 1px solid var(--line);
+    transition: color 0.15s;
+    font-family: var(--mono);
+    font-size: 11px;
+  }
+  .install-block .copy-btn:hover { color: var(--orange); }
+
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+    padding-top: 32px;
+    border-top: 1px solid var(--line-soft);
+  }
+  .stat .num {
+    font-family: var(--mono);
+    font-size: 26px;
+    font-weight: 600;
+    color: var(--ink);
+    letter-spacing: -0.03em;
+    display: block;
+    margin-bottom: 2px;
+  }
+  .stat .num .unit { color: var(--orange); font-weight: 500; }
+  .stat .label {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  /* HERO VISUAL */
+  .demo-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    min-height: 500px;
+  }
+  .demo-frame {
+    background: #0a0a09;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    overflow: hidden;
+    position: relative;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    box-shadow:
+      0 0 0 1px rgba(255, 90, 31, 0.05),
+      0 20px 60px -20px rgba(0, 0, 0, 0.6),
+      0 0 120px -30px rgba(255, 90, 31, 0.15);
+  }
+  .demo-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 14px;
+    background: var(--bg-warm);
+    border-bottom: 1px solid var(--line);
+    font-family: var(--mono);
+    font-size: 10.5px;
+  }
+  .demo-header .traffic { display: flex; gap: 5px; }
+  .demo-header .traffic span { width: 10px; height: 10px; border-radius: 50%; }
+  .demo-header .t1 { background: #ff5f57; }
+  .demo-header .t2 { background: #febc2e; }
+  .demo-header .t3 { background: #28c840; }
+  .demo-header .title { margin: 0 auto; color: var(--muted); }
+  .demo-header .title .fg { color: var(--ink-soft); }
+
+  .demo-body {
+    flex: 1;
+    padding: 20px 24px;
+    font-family: var(--mono);
+    font-size: 12.5px;
+    line-height: 1.65;
+    color: var(--ink-soft);
+    overflow: hidden;
+    position: relative;
+  }
+  .demo-body .c-green { color: var(--success); }
+  .demo-body .c-orange { color: var(--orange); }
+  .demo-body .c-blue { color: #7dd3fc; }
+  .demo-body .c-gray { color: var(--muted); }
+  .demo-body .c-yellow { color: #fbbf24; }
+
+  .demo-line {
+    opacity: 0;
+    transform: translateY(4px);
+    animation: lineIn 0.4s forwards;
+  }
+  @keyframes lineIn { to { opacity: 1; transform: translateY(0); } }
+
+  .type-cursor {
+    display: inline-block;
+    width: 7px;
+    height: 14px;
+    background: var(--orange);
+    vertical-align: -2px;
+    margin-left: 2px;
+    animation: cursor-blink 0.9s steps(2) infinite;
+  }
+  @keyframes cursor-blink { 50% { opacity: 0; } }
+
+  .demo-mesh {
+    padding: 18px 24px;
+    border-top: 1px solid var(--line);
+    background: var(--bg-warm);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+  }
+  .mesh-header {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .mesh-header .live {
+    width: 6px; height: 6px;
+    background: var(--success);
+    border-radius: 50%;
+    animation: blink 2s infinite;
+  }
+  .mesh-nodes { display: flex; gap: 6px; flex-wrap: wrap; }
+  .mesh-chip {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    padding: 3px 8px;
+    border-radius: 3px;
+    background: var(--bg);
+    border: 1px solid var(--line);
+    color: var(--ink-soft);
+  }
+  .mesh-chip.agent {
+    color: var(--orange);
+    border-color: rgba(255, 90, 31, 0.3);
+    background: rgba(255, 90, 31, 0.05);
+  }
+
+  /* HERO BANNER */
+  .hero-banner {
+    background: var(--orange);
+    color: #0a0a09;
+    padding: 14px 0;
+    font-family: var(--mono);
+    font-size: 12.5px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    overflow: hidden;
+    position: relative;
+  }
+  .hero-banner-track {
+    display: flex;
+    gap: 40px;
+    animation: scroll 30s linear infinite;
+    white-space: nowrap;
+    padding-left: 40px;
+  }
+  .hero-banner-track span {
+    display: inline-flex;
+    align-items: center;
+    gap: 40px;
+  }
+  .hero-banner-track span::after {
+    content: '→';
+    font-weight: 800;
+  }
+
+  /* SECTIONS */
+  section { padding: 120px 0; position: relative; }
+  .section-label {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--orange);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 24px;
+  }
+  .section-label .num {
+    font-weight: 600;
+    background: var(--orange);
+    color: var(--bg);
+    padding: 3px 7px;
+    border-radius: 3px;
+    font-size: 10.5px;
+  }
+  .section-label .rule {
+    flex: 1;
+    height: 1px;
+    background: var(--line);
+    max-width: 240px;
+  }
+  h2.section-title {
+    font-family: var(--mono);
+    font-size: clamp(34px, 4.5vw, 56px);
+    line-height: 1.0;
+    letter-spacing: -0.035em;
+    font-weight: 700;
+    margin-bottom: 20px;
+    max-width: 820px;
+  }
+  h2.section-title .serif {
+    font-family: var(--serif);
+    font-weight: 400;
+    font-style: italic;
+    letter-spacing: -0.02em;
+    color: var(--orange);
+  }
+  .section-lede {
+    font-size: 17px;
+    color: var(--ink-soft);
+    max-width: 620px;
+    line-height: 1.55;
+    margin-bottom: 64px;
+  }
+
+  /* PROBLEM */
+  .problem {
+    background: var(--bg-warm);
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+  }
+  .problem-grid {
+    display: grid;
+    grid-template-columns: 1.1fr 1fr;
+    gap: 80px;
+    align-items: center;
+  }
+  .problem-quote {
+    font-family: var(--serif);
+    font-size: clamp(28px, 3.5vw, 44px);
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+    font-weight: 400;
+    color: var(--ink);
+    margin-bottom: 20px;
+  }
+  .problem-quote em { font-style: italic; color: var(--orange); }
+  .problem-quote .strike {
+    text-decoration: line-through;
+    text-decoration-color: var(--orange);
+    text-decoration-thickness: 2px;
+    color: var(--muted);
+  }
+  .problem-attr {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted);
+    letter-spacing: 0.02em;
+  }
+  .problem-list { list-style: none; }
+  .problem-list li {
+    padding: 18px 0;
+    border-bottom: 1px dashed var(--line);
+    display: grid;
+    grid-template-columns: 40px 1fr;
+    gap: 16px;
+    align-items: start;
+    font-size: 15px;
+    color: var(--ink-soft);
+  }
+  .problem-list li:last-child { border-bottom: none; }
+  .problem-list .x {
+    font-family: var(--mono);
+    color: var(--orange);
+    font-weight: 700;
+    font-size: 15px;
+  }
+  .problem-list strong {
+    color: var(--ink);
+    display: block;
+    margin-bottom: 4px;
+    font-weight: 600;
+  }
+
+  /* FEATURES */
+  .features-grid {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    gap: 0;
+    border-top: 1px solid var(--line);
+    border-left: 1px solid var(--line);
+  }
+  .feat {
+    grid-column: span 4;
+    padding: 44px 36px;
+    border-right: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+    background: var(--bg);
+    transition: background 0.2s;
+    position: relative;
+  }
+  .feat:hover { background: var(--bg-warm); }
+  .feat.wide { grid-column: span 6; }
+  .feat-num {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--orange);
+    letter-spacing: 0.08em;
+    margin-bottom: 24px;
+    display: flex;
+    justify-content: space-between;
+  }
+  .feat-num .tag { color: var(--muted); text-transform: uppercase; }
+  .feat-icon { margin-bottom: 20px; color: var(--orange); }
+  .feat h3 {
+    font-family: var(--mono);
+    font-size: 20px;
+    font-weight: 600;
+    letter-spacing: -0.025em;
+    margin-bottom: 12px;
+    color: var(--ink);
+  }
+  .feat p { color: var(--ink-soft); font-size: 14.5px; line-height: 1.6; }
+  .feat .diag {
+    margin-top: 24px;
+    padding: 16px;
+    background: var(--bg-card);
+    border-radius: 6px;
+    border: 1px solid var(--line);
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--ink-soft);
+    line-height: 1.6;
+  }
+  .feat .diag .k { color: var(--orange); }
+  .feat .diag .v { color: var(--success); }
+  .feat .diag .g { color: var(--muted); }
+
+  /* HOW */
+  .how-grid {
+    display: grid;
+    grid-template-columns: 1fr 1.15fr;
+    gap: 60px;
+    align-items: start;
+  }
+  .steps { list-style: none; counter-reset: step; }
+  .steps li {
+    counter-increment: step;
+    padding: 22px 0;
+    border-bottom: 1px solid var(--line);
+    display: grid;
+    grid-template-columns: 48px 1fr;
+    gap: 20px;
+    align-items: start;
+    transition: all 0.2s;
+  }
+  .steps li:hover { padding-left: 8px; }
+  .steps li::before {
+    content: counter(step, decimal-leading-zero);
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--orange);
+    font-weight: 700;
+    padding-top: 3px;
+    letter-spacing: -0.02em;
+  }
+  .steps h4 {
+    font-family: var(--mono);
+    font-size: 19px;
+    font-weight: 600;
+    letter-spacing: -0.025em;
+    margin-bottom: 6px;
+    color: var(--ink);
+  }
+  .steps p { color: var(--ink-soft); font-size: 14.5px; line-height: 1.55; }
+  .steps p code {
+    background: var(--bg-warm);
+    color: var(--orange);
+    padding: 1px 6px;
+    border-radius: 3px;
+    font-size: 12.5px;
+    border: 1px solid var(--line);
+  }
+
+  .code-panel {
+    background: #0a0a09;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    overflow: hidden;
+    position: sticky;
+    top: 80px;
+    box-shadow: 0 20px 60px -20px rgba(0,0,0,0.5), 0 0 120px -40px rgba(255, 90, 31, 0.2);
+  }
+  .code-tabs {
+    display: flex;
+    border-bottom: 1px solid var(--line);
+    background: var(--bg-warm);
+  }
+  .code-tab {
+    padding: 11px 16px;
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--muted);
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    border-right: 1px solid var(--line);
+    transition: all 0.15s;
+    position: relative;
+  }
+  .code-tab.active { color: var(--ink); background: #0a0a09; }
+  .code-tab.active::after {
+    content: '';
+    position: absolute;
+    bottom: -1px; left: 0; right: 0;
+    height: 2px;
+    background: var(--orange);
+  }
+  .code-body {
+    padding: 22px 24px;
+    font-family: var(--mono);
+    font-size: 12.5px;
+    line-height: 1.75;
+    color: var(--ink-soft);
+    min-height: 360px;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  .code-body .prompt { color: var(--orange); user-select: none; }
+  .code-body .comment { color: var(--muted); }
+  .code-body .ok { color: var(--success); }
+  .code-body .str { color: #fbbf24; }
+  .code-body .key { color: #7dd3fc; }
+
+  /* WEDGE */
+  .wedge {
+    background:
+      radial-gradient(ellipse at 30% 50%, rgba(255, 90, 31, 0.12) 0%, transparent 60%),
+      var(--bg);
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+    position: relative;
+    overflow: hidden;
+  }
+  .wedge::before {
+    content: 'FOR·AGENTS';
+    position: absolute;
+    top: 20px;
+    right: -40px;
+    font-family: var(--mono);
+    font-size: 160px;
+    font-weight: 800;
+    color: rgba(255, 90, 31, 0.04);
+    letter-spacing: -0.05em;
+    pointer-events: none;
+  }
+  .wedge-content { max-width: 900px; position: relative; z-index: 1; }
+  .wedge h2 {
+    font-family: var(--mono);
+    font-size: clamp(38px, 5vw, 68px);
+    line-height: 0.95;
+    letter-spacing: -0.035em;
+    font-weight: 700;
+    margin-bottom: 24px;
+  }
+  .wedge h2 .serif {
+    font-family: var(--serif);
+    font-weight: 400;
+    font-style: italic;
+    color: var(--orange);
+  }
+  .wedge-bullets {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 32px;
+    margin-top: 48px;
+  }
+  .wedge-bullet h4 {
+    font-family: var(--mono);
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--orange);
+    margin-bottom: 10px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid rgba(255, 90, 31, 0.3);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .wedge-bullet p { color: var(--ink-soft); font-size: 14.5px; line-height: 1.55; }
+
+  /* PRICING */
+  .pricing {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    overflow: hidden;
+    background: var(--bg-warm);
+  }
+  .plan {
+    padding: 40px 32px;
+    border-right: 1px solid var(--line);
+    background: var(--bg);
+    position: relative;
+  }
+  .plan:last-child { border-right: none; }
+  .plan.featured { background: var(--bg-warm); }
+  .plan.featured::before {
+    content: 'MOST POPULAR';
+    position: absolute;
+    top: 16px; right: 16px;
+    font-family: var(--mono);
+    font-size: 9.5px;
+    font-weight: 600;
+    color: var(--orange);
+    letter-spacing: 0.1em;
+    background: rgba(255, 90, 31, 0.1);
+    border: 1px solid rgba(255, 90, 31, 0.3);
+    padding: 3px 8px;
+    border-radius: 3px;
+  }
+  .plan-name {
+    font-family: var(--mono);
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin-bottom: 6px;
+  }
+  .plan-tagline {
+    font-size: 13.5px;
+    color: var(--muted);
+    margin-bottom: 28px;
+    line-height: 1.4;
+  }
+  .plan-price {
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+    padding-bottom: 24px;
+    margin-bottom: 24px;
+    border-bottom: 1px solid var(--line);
+  }
+  .plan-price .amt {
+    font-family: var(--mono);
+    font-size: 44px;
+    font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.035em;
+    line-height: 1;
+  }
+  .plan-price .per { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+  .plan-features { list-style: none; margin-bottom: 32px; min-height: 180px; }
+  .plan-features li {
+    padding: 8px 0;
+    font-size: 13.5px;
+    color: var(--ink-soft);
+    display: flex;
+    gap: 10px;
+    align-items: start;
+    line-height: 1.45;
+  }
+  .plan-features li::before {
+    content: '+';
+    color: var(--orange);
+    font-weight: 700;
+    font-family: var(--mono);
+    flex-shrink: 0;
+  }
+  .plan .btn { width: 100%; }
+
+  /* CTA */
+  .cta {
+    padding: 140px 0;
+    text-align: center;
+    background: var(--bg-warm);
+    border-top: 1px solid var(--line);
+    position: relative;
+    overflow: hidden;
+  }
+  .cta::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at center, rgba(255, 90, 31, 0.08) 0%, transparent 60%);
+    pointer-events: none;
+  }
+  .cta-inner { position: relative; z-index: 1; max-width: 720px; margin: 0 auto; }
+  .cta h2 {
+    font-family: var(--mono);
+    font-size: clamp(40px, 5.5vw, 72px);
+    line-height: 0.96;
+    letter-spacing: -0.04em;
+    font-weight: 700;
+    margin-bottom: 20px;
+  }
+  .cta h2 .serif {
+    font-family: var(--serif);
+    font-style: italic;
+    font-weight: 400;
+    color: var(--orange);
+  }
+  .cta p {
+    font-size: 17px;
+    color: var(--ink-soft);
+    margin-bottom: 36px;
+    max-width: 540px;
+    margin-left: auto;
+    margin-right: auto;
+    line-height: 1.55;
+  }
+  .waitlist-form {
+    display: flex;
+    gap: 8px;
+    max-width: 480px;
+    margin: 0 auto;
+    background: var(--bg);
+    padding: 6px;
+    border-radius: 10px;
+    border: 1px solid var(--line);
+  }
+  .waitlist-form input {
+    flex: 1;
+    border: none;
+    background: transparent;
+    padding: 12px 16px;
+    font-size: 14.5px;
+    font-family: var(--mono);
+    color: var(--ink);
+    outline: none;
+  }
+  .waitlist-form input::placeholder { color: var(--muted); }
+  .form-msg {
+    margin-top: 16px;
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--success);
+    min-height: 20px;
+  }
+
+  /* FOOTER */
+  footer {
+    border-top: 1px solid var(--line);
+    padding: 60px 0 28px;
+    background: var(--bg);
+  }
+  .footer-grid {
+    display: grid;
+    grid-template-columns: 1.8fr 1fr 1fr 1fr 1fr;
+    gap: 40px;
+    margin-bottom: 48px;
+  }
+  .footer-brand p {
+    color: var(--muted);
+    font-size: 13.5px;
+    line-height: 1.55;
+    margin-top: 16px;
+    max-width: 280px;
+  }
+  .footer-col h5 {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--orange);
+    margin-bottom: 16px;
+    font-weight: 600;
+  }
+  .footer-col a {
+    display: block;
+    color: var(--ink-soft);
+    text-decoration: none;
+    font-size: 13.5px;
+    padding: 5px 0;
+    transition: color 0.15s;
+    font-family: var(--mono);
+  }
+  .footer-col a:hover { color: var(--orange); }
+  .footer-bottom {
+    padding-top: 24px;
+    border-top: 1px solid var(--line);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--muted);
+  }
+  .footer-bottom .duck {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .footer-bottom .duck svg { width: 14px; height: 14px; color: var(--orange); }
+
+  /* RESPONSIVE */
+  @media (max-width: 960px) {
+    .nav-links { display: none; }
+    .hero-grid { grid-template-columns: 1fr; min-height: auto; }
+    .hero-left {
+      padding: 20px 0 60px;
+      border-right: none;
+      border-bottom: 1px solid var(--line);
+    }
+    .hero-right { padding: 40px 0 60px; }
+    .demo-container { min-height: 420px; }
+    .problem-grid, .how-grid { grid-template-columns: 1fr; gap: 40px; }
+    .feat, .feat.wide { grid-column: span 12; }
+    .pricing { grid-template-columns: 1fr; }
+    .plan { border-right: none; border-bottom: 1px solid var(--line); }
+    .plan:last-child { border-bottom: none; }
+    .footer-grid { grid-template-columns: repeat(2, 1fr); }
+    .wedge-bullets { grid-template-columns: 1fr; }
+    section { padding: 80px 0; }
+    .code-panel { position: static; }
+  }
+  @media (max-width: 600px) {
+    .container { padding: 0 20px; }
+    h1.hero-title { font-size: 44px; }
+    .stats-row { grid-template-columns: repeat(2, 1fr); }
+    .stats-row .stat:nth-child(3) { grid-column: span 2; }
+    .footer-grid { grid-template-columns: 1fr 1fr; }
+    .footer-bottom { flex-direction: column; gap: 12px; text-align: center; }
+    .waitlist-form { flex-direction: column; }
+    .waitlist-form .btn { width: 100%; }
+    .hero-banner { font-size: 11px; }
+    .install-block { font-size: 11.5px; }
+    .install-block .cmd { padding: 9px 10px; }
+    .brand-version { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<nav class="topnav">
+  <div class="container nav-inner">
+    <a href="#" class="brand">
+      <span class="brand-mark">
+        <svg viewBox="0 0 24 24" fill="none">
+          <path d="M17 6c-1.4 0-2.5 1.1-2.5 2.5 0 .4.1.8.3 1.2L6 13c-1 .5-1.7 1.5-1.7 2.7 0 1.7 1.4 3 3 3h8.4c3.5 0 6.4-2.9 6.4-6.4 0-2-1-3.8-2.5-5C19.7 6.7 18.5 6 17 6z" fill="currentColor"/>
+          <circle cx="17.5" cy="8.5" r="0.9" fill="#ff5a1f"/>
+          <path d="M22 10l3.5-1-2.5 2.5z" fill="#fff"/>
+        </svg>
+      </span>
+      <span class="brand-name">ducktails<span class="ai">.ai</span></span>
+      <span class="brand-version">v0.1 β</span>
+    </a>
+    <div class="nav-links">
+      <a href="#features">[features]</a>
+      <a href="#how">[how_it_works]</a>
+      <a href="#agents">[for_agents]</a>
+      <a href="#pricing">[pricing]</a>
+      <a href="#docs">[docs]</a>
+    </div>
+    <div class="nav-cta">
+      <a href="#login" class="btn btn-ghost">Sign in</a>
+      <a href="#waitlist" class="btn btn-primary">Start trial <span class="btn-arrow">→</span></a>
+    </div>
+  </div>
+</nav>
+
+<div class="ticker">
+  <div class="ticker-track">
+    <span>BUILT ON WIREGUARD®</span>
+    <span>ZERO-TRUST BY DEFAULT</span>
+    <span>PER-AGENT IDENTITY</span>
+    <span>SELF-HOSTABLE CONTROL PLANE</span>
+    <span>AUDIT LOGS FOREVER</span>
+    <span>NO DATA RETENTION</span>
+    <span>BUILT ON WIREGUARD®</span>
+    <span>ZERO-TRUST BY DEFAULT</span>
+    <span>PER-AGENT IDENTITY</span>
+    <span>SELF-HOSTABLE CONTROL PLANE</span>
+    <span>AUDIT LOGS FOREVER</span>
+    <span>NO DATA RETENTION</span>
+  </div>
+</div>
+
+<section class="hero">
+  <div class="container">
+    <div class="hero-grid">
+      <div class="hero-left">
+        <div class="spec-marks">
+          <span>[001] · HERO</span>
+          <span>DUCKTAILS.AI / 2026</span>
+          <span class="corner"></span>
+        </div>
+        <div class="tag-line">
+          <span class="live-dot"></span>
+          Private beta · v0.1.0
+        </div>
+        <h1 class="hero-title">
+          <span class="line">Mesh networks</span>
+          <span class="line">built for the</span>
+          <span class="line serif"><span class="mark">AI era.</span></span>
+        </h1>
+        <p class="hero-lede">
+          Ducktails is a zero-config mesh VPN for humans <strong>and</strong> autonomous agents. Connect any device, server, or AI worker into one private network in under 60 seconds. <strong>The infrastructure Tailscale forgot to build.</strong>
+        </p>
+        <div class="hero-actions">
+          <a href="#waitlist" class="btn btn-primary btn-lg">
+            Start 14-day trial <span class="btn-arrow">→</span>
+          </a>
+          <a href="#how" class="btn btn-outline btn-lg">Read the docs</a>
+        </div>
+        <div class="install-block">
+          <span class="label">$_</span>
+          <span class="cmd" onclick="copyInstall(this)">curl -fsSL ducktails.ai/install | sh</span>
+          <button class="copy-btn" onclick="copyInstall(this.previousElementSibling)">COPY</button>
+        </div>
+        <div class="stats-row">
+          <div class="stat">
+            <span class="num">60<span class="unit">s</span></span>
+            <span class="label">To connect</span>
+          </div>
+          <div class="stat">
+            <span class="num">∞<span class="unit">·</span></span>
+            <span class="label">Devices & agents</span>
+          </div>
+          <div class="stat">
+            <span class="num">0<span class="unit">KB</span></span>
+            <span class="label">Data we store</span>
+          </div>
+        </div>
+      </div>
+      <div class="hero-right">
+        <div class="demo-container">
+          <div class="demo-frame">
+            <div class="demo-header">
+              <div class="traffic">
+                <span class="t1"></span><span class="t2"></span><span class="t3"></span>
+              </div>
+              <div class="title"><span class="fg">joey@macbook</span>:~/ <span>— ducktails</span></div>
+            </div>
+            <div class="demo-body" id="demo-body"></div>
+            <div class="demo-mesh">
+              <div class="mesh-header">
+                <span class="live"></span>
+                LIVE MESH / 6 NODES
+              </div>
+              <div class="mesh-nodes">
+                <span class="mesh-chip">macbook</span>
+                <span class="mesh-chip">nas</span>
+                <span class="mesh-chip">prod-1</span>
+                <span class="mesh-chip agent">agent_01</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="hero-banner">
+  <div class="hero-banner-track">
+    <span>ZERO-CONFIG</span>
+    <span>END-TO-END ENCRYPTED</span>
+    <span>WORKS BEHIND ANY NAT</span>
+    <span>ONE IDENTITY PER DEVICE</span>
+    <span>PER-AGENT KILL SWITCHES</span>
+    <span>AUDIT LOGS FOREVER</span>
+    <span>SELF-HOSTABLE</span>
+    <span>ZERO-CONFIG</span>
+    <span>END-TO-END ENCRYPTED</span>
+    <span>WORKS BEHIND ANY NAT</span>
+    <span>ONE IDENTITY PER DEVICE</span>
+    <span>PER-AGENT KILL SWITCHES</span>
+    <span>AUDIT LOGS FOREVER</span>
+    <span>SELF-HOSTABLE</span>
+  </div>
+</div>
+
+<section class="problem">
+  <div class="container">
+    <div class="section-label">
+      <span class="num">02</span>
+      <span>The problem</span>
+      <span class="rule"></span>
+    </div>
+    <div class="problem-grid">
+      <div>
+        <div class="problem-quote">
+          The internet wasn't built for <span class="strike">laptops and servers</span>. It definitely wasn't built for <em>thousands of autonomous agents</em> spawning, working, and dying in your infrastructure.
+        </div>
+        <div class="problem-attr">— every SRE, 2026</div>
+      </div>
+      <ul class="problem-list">
+        <li>
+          <span class="x">×</span>
+          <div>
+            <strong>VPN stacks were built for 1999.</strong>
+            Static IPs. Manual configs. Ports you forgot you forwarded. Certificates that expire at 2am.
+          </div>
+        </li>
+        <li>
+          <span class="x">×</span>
+          <div>
+            <strong>Tailscale treats agents as an afterthought.</strong>
+            No per-agent identity. No audit trail of which worker touched what. No kill switch when a model goes rogue.
+          </div>
+        </li>
+        <li>
+          <span class="x">×</span>
+          <div>
+            <strong>Corporate VPNs are slow and centralized.</strong>
+            Every packet hairpins through Chicago. Your AWS-to-GCP agent request takes 600ms to go 4 feet.
+          </div>
+        </li>
+        <li>
+          <span class="x">×</span>
+          <div>
+            <strong>Self-hosting is gated behind "Enterprise."</strong>
+            Want to run your own control plane? That'll be a sales call and $40k/year, please.
+          </div>
+        </li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section id="features">
+  <div class="container">
+    <div class="section-label">
+      <span class="num">03</span>
+      <span>Spec sheet</span>
+      <span class="rule"></span>
+    </div>
+    <h2 class="section-title">
+      Built like <span class="serif">infrastructure.</span>
+    </h2>
+    <p class="section-lede">
+      Every feature earns its place. No bloat, no "AI-enhanced" marketing slop. Just the networking primitives modern teams and agents actually need.
+    </p>
+
+    <div class="features-grid">
+      <div class="feat">
+        <div class="feat-num"><span>01</span><span class="tag">Setup</span></div>
+        <div class="feat-icon">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" fill="currentColor" fill-opacity="0.15"/>
+            <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+          </svg>
+        </div>
+        <h3>60-second install</h3>
+        <p>One curl command. Sign in with Google, GitHub, or SSO. Devices find each other automatically. Never edit a config file again.</p>
+      </div>
+
+      <div class="feat">
+        <div class="feat-num"><span>02</span><span class="tag">Security</span></div>
+        <div class="feat-icon">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <rect x="3" y="11" width="18" height="11" rx="2" fill="currentColor" fill-opacity="0.15"/>
+            <rect x="3" y="11" width="18" height="11" rx="2"/>
+            <path d="M7 11V7a5 5 0 0110 0v4"/>
+          </svg>
+        </div>
+        <h3>End-to-end encrypted</h3>
+        <p>Built on WireGuard®. Traffic never decrypts on our servers. We run zero logs. We literally can't read your data.</p>
+      </div>
+
+      <div class="feat">
+        <div class="feat-num"><span>03</span><span class="tag">Network</span></div>
+        <div class="feat-icon">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <circle cx="12" cy="12" r="10" fill="currentColor" fill-opacity="0.15"/>
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M2 12h20M12 2a15 15 0 010 20M12 2a15 15 0 000 20"/>
+          </svg>
+        </div>
+        <h3>Any network, anywhere</h3>
+        <p>Direct peer-to-peer when possible, relayed when not. NAT, corporate firewall, hotel wifi — your mesh stays up.</p>
+      </div>
+
+      <div class="feat wide">
+        <div class="feat-num"><span>04</span><span class="tag">Agents · Our wedge</span></div>
+        <div class="feat-icon">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <rect x="4" y="6" width="16" height="14" rx="2" fill="currentColor" fill-opacity="0.15"/>
+            <rect x="4" y="6" width="16" height="14" rx="2"/>
+            <circle cx="9" cy="12" r="1" fill="currentColor"/>
+            <circle cx="15" cy="12" r="1" fill="currentColor"/>
+            <path d="M8 3l2 3M16 3l-2 3M9 17h6"/>
+          </svg>
+        </div>
+        <h3>First-class AI agent identity</h3>
+        <p>Every autonomous worker gets its own network identity, ACL, and audit trail. Kill a rogue agent with one click. See every connection it made, every resource it touched, every second of its life on your network. This is what Tailscale doesn't give you.</p>
+        <div class="diag">
+<span class="g">$ ducktails agents list</span><br/>
+<span class="k">agent_01</span>  <span class="v">●</span> active    <span class="g">scraping api.stripe.com</span><br/>
+<span class="k">agent_02</span>  <span class="v">●</span> active    <span class="g">writing db-1.prod</span><br/>
+<span class="k">agent_03</span>  <span class="v">●</span> paused    <span class="g">last seen 3m ago</span><br/>
+<span class="k">agent_04</span>  <span class="v">●</span> killed    <span class="g">exceeded rate limit</span>
+        </div>
+      </div>
+
+      <div class="feat wide">
+        <div class="feat-num"><span>05</span><span class="tag">Control</span></div>
+        <div class="feat-icon">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <path d="M12 2L2 7l10 5 10-5-10-5z" fill="currentColor" fill-opacity="0.15"/>
+            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+          </svg>
+        </div>
+        <h3>ACLs in plain English</h3>
+        <p>Stop writing YAML at midnight. Describe access rules the way you'd tell a teammate: "dev-team can SSH to staging servers, not prod." We compile it to secure policy automatically.</p>
+        <div class="diag">
+<span class="g">// acl.ducktails</span><br/>
+<span class="k">allow</span> <span class="v">dev-team</span> ssh <span class="v">tag:staging</span><br/>
+<span class="k">deny</span>  <span class="v">dev-team</span> ssh <span class="v">tag:prod</span><br/>
+<span class="k">allow</span> <span class="v">agents</span> http <span class="v">tag:api-internal</span><br/>
+<span class="k">allow</span> <span class="v">joey@</span> <span class="v">*</span> <span class="v">*</span>
+        </div>
+      </div>
+
+      <div class="feat">
+        <div class="feat-num"><span>06</span><span class="tag">Trust</span></div>
+        <div class="feat-icon">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <path d="M3 3v18h18" fill="currentColor" fill-opacity="0.15"/>
+            <path d="M3 3v18h18M7 14l4-4 4 4 6-6"/>
+          </svg>
+        </div>
+        <h3>Self-hostable, day one</h3>
+        <p>Don't trust us? Run our control plane on your own hardware. No "call sales." No enterprise gate. Open source clients.</p>
+      </div>
+
+      <div class="feat">
+        <div class="feat-num"><span>07</span><span class="tag">Platforms</span></div>
+        <div class="feat-icon">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <rect x="2" y="4" width="20" height="14" rx="2" fill="currentColor" fill-opacity="0.15"/>
+            <rect x="2" y="4" width="20" height="14" rx="2"/>
+            <path d="M8 20h8M12 16v4"/>
+          </svg>
+        </div>
+        <h3>Every platform, one identity</h3>
+        <p>macOS, Windows, Linux, iOS, Android, Docker, Kubernetes sidecar. Your laptop, your phone, your prod cluster — all on the same tail.</p>
+      </div>
+
+      <div class="feat">
+        <div class="feat-num"><span>08</span><span class="tag">Observability</span></div>
+        <div class="feat-icon">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <path d="M3 12l3-9 3 18 3-12 3 9 3-6 3 6" fill="none"/>
+          </svg>
+        </div>
+        <h3>Audit logs, forever</h3>
+        <p>Every connection. Every denial. Every ACL change. Exportable to Datadog, Splunk, S3. SOC 2 auditors love us. You will too.</p>
+      </div>
+
+      <div class="feat">
+        <div class="feat-num"><span>09</span><span class="tag">Developer</span></div>
+        <div class="feat-icon">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <path d="M8 3l-6 9 6 9M16 3l6 9-6 9" fill="currentColor" fill-opacity="0.15"/>
+            <path d="M8 3l-6 9 6 9M16 3l6 9-6 9"/>
+          </svg>
+        </div>
+        <h3>API for everything</h3>
+        <p>REST, gRPC, CLI, Terraform provider. Provision mesh nodes programmatically. GitOps your entire network topology.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="how" style="background: var(--bg-warm); border-top: 1px solid var(--line);">
+  <div class="container">
+    <div class="section-label">
+      <span class="num">04</span>
+      <span>How it works</span>
+      <span class="rule"></span>
+    </div>
+    <h2 class="section-title">
+      Three commands. <span class="serif">One tail.</span>
+    </h2>
+    <p class="section-lede">
+      Your whole fleet — laptops, servers, containers, AI agents — reachable by name, encrypted end-to-end, in the time it takes to make coffee.
+    </p>
+
+    <div class="how-grid">
+      <ol class="steps">
+        <li>
+          <div>
+            <h4>Install your first device</h4>
+            <p>Run <code>curl -fsSL ducktails.ai/install | sh</code>. Sign in with your existing IdP — Google, GitHub, Microsoft, Okta. You're on the tail.</p>
+          </div>
+        </li>
+        <li>
+          <div>
+            <h4>Add the next one</h4>
+            <p>Same command, same login. The devices find each other through our coordination server and open a direct encrypted tunnel. No IPs to memorize.</p>
+          </div>
+        </li>
+        <li>
+          <div>
+            <h4>Just use them</h4>
+            <p>SSH to your home server from anywhere. Reach your prod DB from your phone. Let your AI agent hit a private API. <code>ducktails ping nas-home</code> — done.</p>
+          </div>
+        </li>
+        <li>
+          <div>
+            <h4>Scale to thousands</h4>
+            <p>Tag devices, write ACLs in plain English, provision agents via API. Your network grows from 3 nodes to 3,000 without adding complexity.</p>
+          </div>
+        </li>
+      </ol>
+
+      <div class="code-panel">
+        <div class="code-tabs">
+          <button class="code-tab active" onclick="switchTab(event, 0)">~/bash</button>
+          <button class="code-tab" onclick="switchTab(event, 1)">acl.hcl</button>
+          <button class="code-tab" onclick="switchTab(event, 2)">agents.py</button>
+        </div>
+        <div class="code-body" id="code-tab-content"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="wedge" id="agents">
+  <div class="container">
+    <div class="wedge-content">
+      <div class="section-label">
+        <span class="num">05</span>
+        <span>The wedge</span>
+        <span class="rule"></span>
+      </div>
+      <h2>
+        AI agents don't belong on <span class="serif">a human VPN.</span>
+      </h2>
+      <p class="section-lede">
+        In 2026 your infrastructure isn't just humans anymore. It's browsers, scrapers, autonomous workers, and LLM-driven agents spawning in milliseconds, hitting APIs, mutating databases, and dying. They need their own identity model. We built it.
+      </p>
+
+      <div class="wedge-bullets">
+        <div class="wedge-bullet">
+          <h4>// Per-agent identity</h4>
+          <p>Every autonomous worker gets a unique network identity — not a shared service account. Revoke one without touching the others.</p>
+        </div>
+        <div class="wedge-bullet">
+          <h4>// Full audit trail</h4>
+          <p>Which agent hit which endpoint at which time with which response code. Exportable, queryable, forever.</p>
+        </div>
+        <div class="wedge-bullet">
+          <h4>// Kill switches</h4>
+          <p>Model hallucinating? Rate-limit blown? Cost runaway? One click disconnects an agent from your entire mesh. Instantly.</p>
+        </div>
+        <div class="wedge-bullet">
+          <h4>// Ephemeral by design</h4>
+          <p>Spin up 500 agents for a job, tear them down after. No residual credentials, no stale ACL entries, no cleanup.</p>
+        </div>
+        <div class="wedge-bullet">
+          <h4>// Per-agent rate limits</h4>
+          <p>Cap bandwidth, request volume, or destination scope per agent. Stop one rogue worker from nuking your AWS bill.</p>
+        </div>
+        <div class="wedge-bullet">
+          <h4>// LLM-native ACLs</h4>
+          <p>Describe agent permissions in English. Our compiler turns "allow scraper to read, not write" into verified policy.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="pricing">
+  <div class="container">
+    <div class="section-label">
+      <span class="num">06</span>
+      <span>Pricing</span>
+      <span class="rule"></span>
+    </div>
+    <h2 class="section-title">
+      No free tier. No sales calls. <span class="serif">No bullshit.</span>
+    </h2>
+    <p class="section-lede">
+      Honest pricing you can read in 30 seconds. Every plan includes every feature. The price scales with your fleet, not your anxiety. Cancel anytime.
+    </p>
+
+    <div class="pricing">
+      <div class="plan">
+        <div class="plan-name">Starter</div>
+        <div class="plan-tagline">Solo builders, homelabs, and side projects</div>
+        <div class="plan-price">
+          <span class="amt">$8</span>
+          <span class="per">/month</span>
+        </div>
+        <ul class="plan-features">
+          <li>Up to 20 devices</li>
+          <li>1 user account</li>
+          <li>Unlimited bandwidth</li>
+          <li>All platforms</li>
+          <li>Community support</li>
+          <li>7-day free trial</li>
+        </ul>
+        <a href="#waitlist" class="btn btn-outline">Start trial</a>
+      </div>
+
+      <div class="plan featured">
+        <div class="plan-name">Team</div>
+        <div class="plan-tagline">Startups, dev teams, and AI operations</div>
+        <div class="plan-price">
+          <span class="amt">$12</span>
+          <span class="per">/user/mo</span>
+        </div>
+        <ul class="plan-features">
+          <li>Unlimited devices & agents</li>
+          <li>Per-agent identity & audit logs</li>
+          <li>SSO (Google, Okta, Microsoft)</li>
+          <li>Plain-English ACLs</li>
+          <li>Kill switches & rate limits</li>
+          <li>Priority email support</li>
+          <li>14-day free trial</li>
+        </ul>
+        <a href="#waitlist" class="btn btn-primary">Start trial →</a>
+      </div>
+
+      <div class="plan">
+        <div class="plan-name">Enterprise</div>
+        <div class="plan-tagline">Regulated industries & large fleets</div>
+        <div class="plan-price">
+          <span class="amt">Custom</span>
+        </div>
+        <ul class="plan-features">
+          <li>Everything in Team</li>
+          <li>Self-hosted control plane</li>
+          <li>SCIM provisioning</li>
+          <li>SOC 2 Type II reports</li>
+          <li>Audit logs, forever</li>
+          <li>Dedicated Slack channel</li>
+          <li>Custom contracts & invoicing</li>
+        </ul>
+        <a href="#contact" class="btn btn-outline">Contact sales</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="cta" id="waitlist">
+  <div class="container cta-inner">
+    <div class="section-label" style="justify-content: center;">
+      <span class="num">07</span>
+      <span>Join the beta</span>
+    </div>
+    <h2>Get on the <span class="serif">pond.</span></h2>
+    <p>Private beta is rolling out now. Drop your email and we'll send you an invite this week. No spam, no marketing drip — just access.</p>
+    <form class="waitlist-form" onsubmit="joinWaitlist(event)">
+      <input type="email" placeholder="you@company.com" required id="waitlist-email" />
+      <button type="submit" class="btn btn-primary btn-lg">Request invite →</button>
+    </form>
+    <div class="form-msg" id="form-msg"></div>
+  </div>
+</section>
+
+<footer>
+  <div class="container">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <a href="#" class="brand">
+          <span class="brand-mark">
+            <svg viewBox="0 0 24 24" fill="none">
+              <path d="M17 6c-1.4 0-2.5 1.1-2.5 2.5 0 .4.1.8.3 1.2L6 13c-1 .5-1.7 1.5-1.7 2.7 0 1.7 1.4 3 3 3h8.4c3.5 0 6.4-2.9 6.4-6.4 0-2-1-3.8-2.5-5C19.7 6.7 18.5 6 17 6z" fill="currentColor"/>
+              <circle cx="17.5" cy="8.5" r="0.9" fill="#ff5a1f"/>
+              <path d="M22 10l3.5-1-2.5 2.5z" fill="#fff"/>
+            </svg>
+          </span>
+          <span class="brand-name">ducktails<span class="ai">.ai</span></span>
+        </a>
+        <p>Zero-config mesh networking for humans, servers, and AI agents. Built on WireGuard®. Made for the way infrastructure works now.</p>
+      </div>
+      <div class="footer-col">
+        <h5>// Product</h5>
+        <a href="#features">Features</a>
+        <a href="#pricing">Pricing</a>
+        <a href="#how">How it works</a>
+        <a href="#agents">For agents</a>
+        <a href="#changelog">Changelog</a>
+      </div>
+      <div class="footer-col">
+        <h5>// Developers</h5>
+        <a href="#docs">Docs</a>
+        <a href="#api">API reference</a>
+        <a href="#cli">CLI</a>
+        <a href="#terraform">Terraform</a>
+        <a href="#status">Status page</a>
+      </div>
+      <div class="footer-col">
+        <h5>// Company</h5>
+        <a href="#about">About</a>
+        <a href="#blog">Blog</a>
+        <a href="#careers">Careers</a>
+        <a href="#security">Security</a>
+        <a href="#contact">Contact</a>
+      </div>
+      <div class="footer-col">
+        <h5>// Legal</h5>
+        <a href="#privacy">Privacy</a>
+        <a href="#terms">Terms</a>
+        <a href="#dpa">DPA</a>
+        <a href="#trademark">Trademark</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2026 Ducktails, Inc. · WireGuard® is a registered trademark of Jason A. Donenfeld.</span>
+      <span class="duck">
+        <svg viewBox="0 0 24 24" fill="none">
+          <path d="M17 6c-1.4 0-2.5 1.1-2.5 2.5 0 .4.1.8.3 1.2L6 13c-1 .5-1.7 1.5-1.7 2.7 0 1.7 1.4 3 3 3h8.4c3.5 0 6.4-2.9 6.4-6.4 0-2-1-3.8-2.5-5C19.7 6.7 18.5 6 17 6z" fill="currentColor"/>
+        </svg>
+        made on the pond
+      </span>
+    </div>
+  </div>
+</footer>
+
+<script>
+  function copyInstall(el) {
+    const text = 'curl -fsSL ducktails.ai/install | sh';
+    navigator.clipboard.writeText(text);
+    const orig = el.textContent;
+    el.textContent = '✓ copied';
+    setTimeout(() => { el.textContent = orig; }, 1500);
+  }
+
+  function joinWaitlist(e) {
+    e.preventDefault();
+    const email = document.getElementById('waitlist-email').value;
+    const msg = document.getElementById('form-msg');
+    msg.textContent = '> ' + email + ' added to queue. Invite incoming within 7 days.';
+    document.getElementById('waitlist-email').value = '';
+    setTimeout(() => { msg.textContent = ''; }, 8000);
+  }
+
+  const demoLines = [
+    { text: '<span class="c-orange">$</span> ducktails up', delay: 300 },
+    { text: '<span class="c-gray">→ Authenticating as joey@airfresh.com...</span>', delay: 400 },
+    { text: '<span class="c-green">✓ Connected.</span> This device: <span class="c-yellow">macbook-joey</span>', delay: 300 },
+    { text: '&nbsp;', delay: 200 },
+    { text: '<span class="c-orange">$</span> ducktails status', delay: 500 },
+    { text: '<span class="c-blue">NAME</span>           <span class="c-blue">IP</span>          <span class="c-blue">STATUS</span>', delay: 100 },
+    { text: '<span class="c-yellow">macbook-joey</span>   100.64.0.1  <span class="c-green">● you</span>', delay: 150 },
+    { text: '<span class="c-yellow">nas-home</span>       100.64.0.2  <span class="c-green">● direct</span>', delay: 150 },
+    { text: '<span class="c-yellow">aws-prod-1</span>     100.64.0.3  <span class="c-green">● direct</span>', delay: 150 },
+    { text: '<span class="c-orange">agent_01</span>       100.64.0.4  <span class="c-green">● relay</span> <span class="c-gray">[scraping]</span>', delay: 250 },
+    { text: '&nbsp;', delay: 200 },
+    { text: '<span class="c-orange">$</span> ssh nas-home', delay: 500 },
+    { text: '<span class="c-gray">// welcome home, joey.</span>', delay: 400 },
+    { text: '<span class="c-orange">$</span> <span class="type-cursor"></span>', delay: 0 }
+  ];
+  function playDemo() {
+    const el = document.getElementById('demo-body');
+    if (!el) return;
+    el.innerHTML = '';
+    let total = 0;
+    demoLines.forEach((line) => {
+      total += line.delay;
+      setTimeout(() => {
+        const div = document.createElement('div');
+        div.className = 'demo-line';
+        div.innerHTML = line.text;
+        el.appendChild(div);
+        el.scrollTop = el.scrollHeight;
+      }, total);
+    });
+    setTimeout(playDemo, total + 6000);
+  }
+  playDemo();
+
+  const codeSamples = [
+`<span class="prompt">$</span> curl -fsSL ducktails.ai/install | sh
+<span class="comment"># installing ducktails v0.1.0 ...</span>
+<span class="ok">✓ installed</span>
+
+<span class="prompt">$</span> ducktails up
+→ visit <span class="key">https://login.ducktails.ai/a/8f3k2</span>
+<span class="ok">✓ connected as joey@airfresh.com</span>
+<span class="ok">✓ this device: macbook-joey (100.64.0.1)</span>
+
+<span class="prompt">$</span> ducktails status
+<span class="str">macbook-joey</span>    100.64.0.1   <span class="ok">● you</span>
+<span class="str">nas-home</span>        100.64.0.2   <span class="ok">● direct</span>
+<span class="str">aws-prod-1</span>      100.64.0.3   <span class="ok">● direct</span>
+<span class="str">agent_01</span>        100.64.0.4   <span class="ok">● relay</span>
+
+<span class="prompt">$</span> ssh nas-home
+<span class="comment"># you are home.</span>`,
+
+`<span class="comment">// acl.ducktails — plain English rules</span>
+
+<span class="key">group</span> <span class="str">dev-team</span> {
+  joey@airfresh.com
+  kai@airfresh.com
+  devyn@airfresh.com
+}
+
+<span class="key">group</span> <span class="str">agents</span> {
+  tag:autonomous
+  tag:scraper
+}
+
+<span class="ok">allow</span>  <span class="str">dev-team</span>  ssh       <span class="str">tag:staging</span>
+<span class="ok">allow</span>  <span class="str">dev-team</span>  http(s)   <span class="str">*</span>
+<span class="prompt">deny</span>   <span class="str">dev-team</span>  ssh       <span class="str">tag:prod</span>
+
+<span class="ok">allow</span>  <span class="str">agents</span>    http(s)   <span class="str">tag:api-internal</span>
+<span class="prompt">deny</span>   <span class="str">agents</span>    *         <span class="str">tag:finance</span>
+
+<span class="comment">// auto-expires; we verify every packet.</span>`,
+
+`<span class="comment"># spin up 100 ephemeral agents on your mesh</span>
+<span class="key">from</span> ducktails <span class="key">import</span> Mesh, Agent
+
+mesh = Mesh(api_key=<span class="str">"dk_live_..."</span>)
+
+<span class="key">for</span> i <span class="key">in</span> range(<span class="str">100</span>):
+    agent = mesh.agents.create(
+        name=<span class="str">f"scraper_{i}"</span>,
+        tags=[<span class="str">"autonomous"</span>, <span class="str">"scraper"</span>],
+        rate_limit=<span class="str">"500/min"</span>,
+        ttl=<span class="str">"2h"</span>,      <span class="comment"># auto-kill</span>
+    )
+    <span class="key">print</span>(<span class="str">f"✓ {agent.name} @ {agent.ip}"</span>)
+
+<span class="comment"># audit trail is already streaming to your logs.</span>`
+  ];
+  function switchTab(e, idx) {
+    document.querySelectorAll('.code-tab').forEach(t => t.classList.remove('active'));
+    e.target.classList.add('active');
+    document.getElementById('code-tab-content').innerHTML = codeSamples[idx];
+  }
+  document.getElementById('code-tab-content').innerHTML = codeSamples[0];
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.style.opacity = '1';
+        entry.target.style.transform = 'translateY(0)';
+      }
+    });
+  }, { threshold: 0.1 });
+  document.querySelectorAll('.feat, .plan, .wedge-bullet, .problem-list li').forEach(el => {
+    el.style.opacity = '0';
+    el.style.transform = 'translateY(16px)';
+    el.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+    observer.observe(el);
+  });
+</script>
+
+</body>
+</html>
