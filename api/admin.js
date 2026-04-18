@@ -1,9 +1,9 @@
-const { Pool } = require('pg');
+const { createClient } = require('@supabase/supabase-js');
 
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: process.env.DATABASE_URL?.includes('railway') ? false : { rejectUnauthorized: false },
-});
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_KEY
+);
 
 const ADMIN_KEY = process.env.ADMIN_KEY || 'dk_admin_ducktails_2026';
 
@@ -13,9 +13,15 @@ module.exports = async (req, res) => {
   }
 
   try {
-    const result = await pool.query('SELECT id, email, created_at FROM waitlist ORDER BY created_at DESC');
-    const count = result.rows.length;
-    const rows = result.rows.map(r =>
+    const { data, error } = await supabase
+      .from('waitlist')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+
+    const count = data.length;
+    const rows = data.map(r =>
       `<tr><td>${r.id}</td><td>${r.email}</td><td>${new Date(r.created_at).toLocaleString()}</td></tr>`
     ).join('');
 
