@@ -1782,7 +1782,7 @@
     btn.disabled = true;
     btn.textContent = 'Submitting...';
     try {
-      const res = await fetch('https://api-production-1873.up.railway.app/waitlist', {
+      const res = await fetch('/api/waitlist', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email })

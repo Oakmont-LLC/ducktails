@@ -1,0 +1,6 @@
+{
+  "rewrites": [
+    { "source": "/api/waitlist", "destination": "/api/waitlist" },
+    { "source": "/api/admin", "destination": "/api/admin" }
+  ]
+}
